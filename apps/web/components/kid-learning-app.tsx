@@ -28,6 +28,7 @@ const MODE_LABELS: Record<Mode, string> = {
 export function KidLearningApp() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [autoLoginTried, setAutoLoginTried] = useState(false);
 
   const [mode, setMode] = useState<Mode | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -75,6 +76,19 @@ export function KidLearningApp() {
     const timer = window.setTimeout(() => setToast(null), 2500);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (authLoading || user || autoLoginTried) return;
+    setAutoLoginTried(true);
+
+    void (async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (error) {
+        console.error("Auto anonymous sign-in failed", error);
+      }
+    })();
+  }, [authLoading, user, autoLoginTried]);
 
   async function handleLogin() {
     try {
@@ -160,7 +174,7 @@ export function KidLearningApp() {
       <main>
         <section className="card" style={{ maxWidth: 520, margin: "0 auto" }}>
           <h1>Sensei Suki</h1>
-          <p>Tap below to start learning.</p>
+          <p>{autoLoginTried ? "Tap below to start learning." : "Signing in..."}</p>
           <button type="button" onClick={handleLogin} style={{ width: "100%", padding: "1rem" }}>
             Login
           </button>
