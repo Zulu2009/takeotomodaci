@@ -1,0 +1,11 @@
+name = "sensei-suki-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+
+[vars]
+OPENAI_MODEL = "gpt-4o-mini"
+R2_PUBLIC_BASE_URL = ""
+
+[[r2_buckets]]
+binding = "CONTENT_BUCKET"
+bucket_name = "sensei-suki-content"
