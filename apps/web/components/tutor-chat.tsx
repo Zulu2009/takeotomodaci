@@ -16,6 +16,8 @@ export function TutorChat() {
   const apiBase = useMemo(() => {
     return (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
   }, []);
+  const useExternalApi = process.env.NEXT_PUBLIC_USE_EXTERNAL_API === "true" && Boolean(apiBase);
+  const chatEndpoint = useExternalApi ? `${apiBase}/api/chat` : "/api/chat";
 
   useEffect(() => {
     void initAnalytics();
@@ -24,7 +26,7 @@ export function TutorChat() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || !apiBase || loading) return;
+    if (!trimmed || loading) return;
 
     const nextMessages = [...messages, { role: "user" as const, content: trimmed }];
     setMessages(nextMessages);
@@ -32,14 +34,21 @@ export function TutorChat() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiBase}/api/chat`, {
+      const response = await fetch(chatEndpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ messages: nextMessages }),
       });
 
       if (!response.ok) {
-        throw new Error(`Request failed: ${response.status}`);
+        let detail = "";
+        try {
+          const errorData = (await response.json()) as { error?: string; detail?: string };
+          detail = errorData.error ?? errorData.detail ?? "";
+        } catch {
+          // keep fallback error below
+        }
+        throw new Error(detail ? `${response.status} ${detail}` : `Request failed: ${response.status}`);
       }
 
       const data = (await response.json()) as { answer?: string };
@@ -60,11 +69,7 @@ export function TutorChat() {
   return (
     <section className="card" style={{ marginBottom: "1rem" }}>
       <h2>AI Tutor</h2>
-      {!apiBase ? (
-        <p>
-          Set <code>NEXT_PUBLIC_API_BASE_URL</code> to your Worker URL to enable chat.
-        </p>
-      ) : null}
+      {useExternalApi ? <p>Using external API route.</p> : <p>Using built-in Vercel API route.</p>}
 
       <div style={{ display: "grid", gap: "0.5rem", marginBottom: "1rem" }}>
         {messages.length === 0 ? <p>No messages yet.</p> : null}
@@ -88,7 +93,7 @@ export function TutorChat() {
             fontSize: "1rem",
           }}
         />
-        <button type="submit" disabled={loading || !apiBase}>
+        <button type="submit" disabled={loading}>
           {loading ? "Sending..." : "Send"}
         </button>
       </form>
