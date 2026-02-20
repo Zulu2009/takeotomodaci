@@ -1,0 +1,16 @@
+[
+  {
+    "id": "day-01-greetings",
+    "title": "Day 1: Greetings",
+    "level": "beginner",
+    "objective": "Introduce basic greetings and polite self-introduction.",
+    "vocab": ["こんにちは", "おはよう", "こんばんは", "はじめまして"]
+  },
+  {
+    "id": "day-02-numbers",
+    "title": "Day 2: Numbers 1-10",
+    "level": "beginner",
+    "objective": "Learn counting and simple number usage.",
+    "vocab": ["いち", "に", "さん", "よん", "ご"]
+  }
+]
