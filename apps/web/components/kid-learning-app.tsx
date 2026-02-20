@@ -12,7 +12,7 @@ import {
 import { auth } from "@/lib/firebase";
 import { initAnalytics } from "@/lib/analytics";
 
-type Mode = "fun-chat" | "training-5" | "training-10";
+type Mode = "fun-chat" | "training-5" | "training-10" | "kana-match";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -35,10 +35,22 @@ type ProgressState = {
   words: WordEntry[];
 };
 
+type KanaItem = {
+  kana: string;
+  romaji: string;
+};
+
+type KanaRound = {
+  kana: string;
+  options: string[];
+  answer: string;
+};
+
 const MODE_LABELS: Record<Mode, string> = {
   "fun-chat": "Start Fun Chat",
   "training-5": "Training (5 min)",
   "training-10": "Training (10 min)",
+  "kana-match": "Kana Match Game",
 };
 
 const MODE_STARTERS: Record<Mode, string> = {
@@ -48,7 +60,23 @@ const MODE_STARTERS: Record<Mode, string> = {
     "Welcome to 5-minute training. I will run quick practice rounds and then a mini challenge.",
   "training-10":
     "Welcome to 10-minute training. I will teach a deeper mini lesson, then quiz your recall.",
+  "kana-match": "Kana Match time. Tap the correct romaji for each kana card.",
 };
+
+const KANA_ITEMS: KanaItem[] = [
+  { kana: "あ", romaji: "a" },
+  { kana: "い", romaji: "i" },
+  { kana: "う", romaji: "u" },
+  { kana: "え", romaji: "e" },
+  { kana: "お", romaji: "o" },
+  { kana: "か", romaji: "ka" },
+  { kana: "き", romaji: "ki" },
+  { kana: "く", romaji: "ku" },
+  { kana: "け", romaji: "ke" },
+  { kana: "こ", romaji: "ko" },
+  { kana: "さ", romaji: "sa" },
+  { kana: "し", romaji: "shi" },
+];
 
 const EMPTY_PROGRESS: ProgressState = {
   xp: 0,
@@ -116,6 +144,30 @@ function pickReviewQueue(words: WordEntry[]): WordEntry[] {
   return pool.slice(0, 3);
 }
 
+function shuffle<T>(values: T[]): T[] {
+  const copy = [...values];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = temp;
+  }
+  return copy;
+}
+
+function createKanaRound(): KanaRound {
+  const item = KANA_ITEMS[Math.floor(Math.random() * KANA_ITEMS.length)];
+  const distractors = shuffle(
+    KANA_ITEMS.filter((entry) => entry.romaji !== item.romaji).map((entry) => entry.romaji),
+  ).slice(0, 3);
+
+  return {
+    kana: item.kana,
+    answer: item.romaji,
+    options: shuffle([item.romaji, ...distractors]),
+  };
+}
+
 export function KidLearningApp() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -125,6 +177,9 @@ export function KidLearningApp() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [kanaRound, setKanaRound] = useState<KanaRound | null>(null);
+  const [kanaRoundIndex, setKanaRoundIndex] = useState(0);
+  const [kanaScore, setKanaScore] = useState(0);
 
   const [progress, setProgress] = useState<ProgressState>(withDailyReset(EMPTY_PROGRESS));
   const [pendingMode, setPendingMode] = useState<Mode | null>(null);
@@ -232,6 +287,9 @@ export function KidLearningApp() {
       await signOut(auth);
       setMode(null);
       setMessages([]);
+      setKanaRound(null);
+      setKanaRoundIndex(0);
+      setKanaScore(0);
       setPendingMode(null);
       setReviewQueue([]);
       setReviewIndex(0);
@@ -246,6 +304,14 @@ export function KidLearningApp() {
 
   function beginMode(nextMode: Mode) {
     setMode(nextMode);
+    if (nextMode === "kana-match") {
+      setKanaRound(createKanaRound());
+      setKanaRoundIndex(0);
+      setKanaScore(0);
+      setMessages([]);
+      return;
+    }
+
     setMessages([{ role: "assistant", content: MODE_STARTERS[nextMode] }]);
   }
 
@@ -320,6 +386,27 @@ export function KidLearningApp() {
       return;
     }
     setToast("Oops — try again");
+  }
+
+  function handleKanaAnswer(selected: string) {
+    if (!kanaRound) return;
+    const isCorrect = selected === kanaRound.answer;
+    if (isCorrect) {
+      setKanaScore((prev) => prev + 1);
+      awardXp(10);
+    } else {
+      awardXp(3);
+    }
+
+    if (kanaRoundIndex >= 4) {
+      setToast(isCorrect ? "Nice! Game complete." : "Good effort! Game complete.");
+      setMode(null);
+      setKanaRound(null);
+      return;
+    }
+
+    setKanaRoundIndex((prev) => prev + 1);
+    setKanaRound(createKanaRound());
   }
 
   async function handleChatSubmit(event: FormEvent<HTMLFormElement>) {
@@ -448,6 +535,10 @@ export function KidLearningApp() {
             <span>Training (10 min)</span>
             <span>→</span>
           </button>
+          <button type="button" onClick={() => openMode("kana-match")} className="mode-button">
+            <span>Kana Match</span>
+            <span>→</span>
+          </button>
 
           <div className="card" style={{ margin: 0 }}>
             <h3 style={{ marginTop: 0 }}>Word Bank</h3>
@@ -524,6 +615,29 @@ export function KidLearningApp() {
             <button type="button" onClick={() => finishReviewStep(true)}>
               Got it
             </button>
+          </div>
+        </section>
+      ) : mode === "kana-match" && kanaRound ? (
+        <section className="card" style={{ maxWidth: 780 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+            <h2 style={{ margin: 0 }}>Kana Match</h2>
+            <button type="button" className="secondary" onClick={() => setMode(null)}>
+              Back Home
+            </button>
+          </div>
+          <p style={{ marginBottom: "0.3rem" }}>
+            Round {kanaRoundIndex + 1}/5 • Score {kanaScore}
+          </p>
+          <div className="card" style={{ margin: "0.7rem 0", textAlign: "center" }}>
+            <p style={{ margin: "0 0 0.35rem" }}>Match this kana:</p>
+            <h2 style={{ fontSize: "3rem", margin: 0 }}>{kanaRound.kana}</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(140px, 1fr))", gap: "0.6rem" }}>
+            {kanaRound.options.map((option) => (
+              <button key={option} type="button" onClick={() => handleKanaAnswer(option)} className="secondary">
+                {option}
+              </button>
+            ))}
           </div>
         </section>
       ) : (
