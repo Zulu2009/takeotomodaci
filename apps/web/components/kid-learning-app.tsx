@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   browserLocalPersistence,
   onAuthStateChanged,
@@ -682,6 +683,10 @@ export function KidLearningApp() {
             <span>Kana Match</span>
             <span>→</span>
           </button>
+          <Link href="/hiragana-book" className="mode-button">
+            <span>Hiragana Book (Swipe)</span>
+            <span>→</span>
+          </Link>
           {reviewPreparing ? <p>Preparing quick review...</p> : null}
 
           <div className="card" style={{ margin: 0 }}>
