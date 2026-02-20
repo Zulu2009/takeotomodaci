@@ -682,6 +682,10 @@ export function KidLearningApp() {
             <span>Kana Match</span>
             <span>→</span>
           </button>
+          <button type="button" onClick={() => (window.location.href = "/hiragana-book")} className="mode-button">
+            <span>Hiragana Book (Swipe)</span>
+            <span>→</span>
+          </button>
           {reviewPreparing ? <p>Preparing quick review...</p> : null}
 
           <div className="card" style={{ margin: 0 }}>
