@@ -21,6 +21,8 @@ type ChatMessage = {
 
 type WordEntry = {
   term: string;
+  romaji: string;
+  english: string;
   count: number;
   lastSeen: string;
   nextReviewAt: string;
@@ -33,6 +35,12 @@ type ProgressState = {
   dailyXp: number;
   dailySessions: number;
   words: WordEntry[];
+};
+
+type TutorVocabItem = {
+  term: string;
+  romaji: string;
+  english: string;
 };
 
 type KanaItem = {
@@ -136,6 +144,8 @@ function parseStoredProgress(value: string | null): ProgressState {
         ? parsed.words
             .map((word) => ({
               term: typeof word.term === "string" ? word.term : "",
+              romaji: typeof word.romaji === "string" ? word.romaji : "",
+              english: typeof word.english === "string" ? word.english : "",
               count: typeof word.count === "number" ? word.count : 1,
               lastSeen: typeof word.lastSeen === "string" ? word.lastSeen : new Date().toISOString(),
               nextReviewAt: typeof word.nextReviewAt === "string" ? word.nextReviewAt : new Date().toISOString(),
@@ -456,28 +466,34 @@ export function KidLearningApp() {
         throw new Error(errorData.error ?? "Tutor request failed");
       }
 
-      const data = (await response.json()) as { text?: string };
+      const data = (await response.json()) as { text?: string; vocab?: TutorVocabItem[] };
       const reply = data.text ?? "Let's try again.";
 
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
 
       const nowIso = new Date().toISOString();
+      const vocabItems = Array.isArray(data.vocab) ? data.vocab : [];
       const terms = extractJapaneseTerms(reply);
       setProgress((prev) => {
         const next = withDailyReset(prev);
         const wordsMap = new Map(next.words.map((word) => [word.term, word]));
 
         for (const term of terms) {
+          const match = vocabItems.find((item) => item.term === term);
           const existing = wordsMap.get(term);
           if (existing) {
             wordsMap.set(term, {
               ...existing,
+              romaji: match?.romaji || existing.romaji,
+              english: match?.english || existing.english,
               count: existing.count + 1,
               lastSeen: nowIso,
             });
           } else {
             wordsMap.set(term, {
               term,
+              romaji: match?.romaji ?? "",
+              english: match?.english ?? "",
               count: 1,
               lastSeen: nowIso,
               nextReviewAt: nowIso,
@@ -578,9 +594,11 @@ export function KidLearningApp() {
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
               {progress.words.slice(0, 12).map((word) => (
-                <span key={word.term} className="badge">
-                  {word.term}
-                </span>
+                <div key={word.term} className="card" style={{ margin: 0, padding: "0.45rem 0.6rem" }}>
+                  <strong>{word.term}</strong>
+                  <p style={{ margin: 0, fontSize: "0.78rem" }}>{word.romaji || "..."}</p>
+                  <p style={{ margin: 0, fontSize: "0.78rem" }}>{word.english || "..."}</p>
+                </div>
               ))}
               {progress.words.length === 0 ? <span>No words yet. Start chatting.</span> : null}
             </div>
@@ -638,6 +656,8 @@ export function KidLearningApp() {
           <div className="card" style={{ margin: "0.6rem 0", textAlign: "center" }}>
             <p style={{ marginBottom: "0.2rem" }}>Word</p>
             <h2 style={{ margin: 0, fontSize: "2rem" }}>{reviewWord.term}</h2>
+            <p style={{ margin: "0.3rem 0 0", fontSize: "1rem" }}>{reviewWord.romaji || "..."}</p>
+            <p style={{ margin: "0.2rem 0 0", fontSize: "0.95rem" }}>{reviewWord.english || "..."}</p>
           </div>
           <div style={{ display: "flex", gap: "0.6rem" }}>
             <button type="button" className="secondary" onClick={() => finishReviewStep(false)}>
