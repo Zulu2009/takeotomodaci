@@ -99,13 +99,15 @@ const KANA_ITEMS: KanaItem[] = [
 const FUN_CARDS: FunCard[] = [
   { kind: "Trivia", text: "In Japanese, there are multiple words for 'I' like watashi, boku, and ore depending on context." },
   { kind: "Fact", text: "The Japanese school year usually starts in April, right when cherry blossoms begin to bloom." },
-  { kind: "Dad Joke", text: "What do you call a sleepy samurai? A nap-urai." },
+  { kind: "Dad Joke", text: "Why did the kanji student bring a ladder? To reach a higher level." },
   { kind: "Trivia", text: "Arigato can feel casual, while arigato gozaimasu is more polite and formal." },
   { kind: "Fact", text: "Many Japanese convenience stores are famous for fresh meals, not just snacks." },
-  { kind: "Dad Joke", text: "Why did the sushi blush? It saw the soy sauce undressing." },
+  { kind: "Dad Joke", text: "I opened a sushi gym. It has great rolls." },
   { kind: "Trivia", text: "Hiragana is often used for grammar and native words, while katakana is used for many foreign loanwords." },
   { kind: "Fact", text: "You can often hear train departure melodies in Japan, and stations may have their own tune." },
-  { kind: "Dad Joke", text: "I tried learning kanji too fast... now my brain needs subtitles." },
+  { kind: "Dad Joke", text: "My Japanese vocabulary is like tempura: still in batter shape, but getting crisp." },
+  { kind: "Dad Joke", text: "I told my friend I mastered katakana. He said, 'Sounds like a bold character arc.'" },
+  { kind: "Dad Joke", text: "Why did the ramen chef study grammar? Better noodle clauses." },
 ];
 
 const TEEN_TRIVIA_CARDS: TeenTriviaCard[] = [
@@ -246,10 +248,7 @@ function pickRandomJokeCard(): FunCard {
 }
 
 function pickTeenTriviaCard(): TeenTriviaCard {
-  const today = isoDateOnly(new Date());
-  const dayNumber = Number(today.replace(/-/g, ""));
-  const index = Math.abs(dayNumber) % TEEN_TRIVIA_CARDS.length;
-  return TEEN_TRIVIA_CARDS[index];
+  return TEEN_TRIVIA_CARDS[Math.floor(Math.random() * TEEN_TRIVIA_CARDS.length)] ?? TEEN_TRIVIA_CARDS[0];
 }
 
 export function KidLearningApp() {
@@ -277,9 +276,9 @@ export function KidLearningApp() {
 
   const [toast, setToast] = useState<string | null>(null);
   const [refreshJoke] = useState<FunCard>(() => pickRandomJokeCard());
+  const [refreshTrivia] = useState<TeenTriviaCard>(() => pickTeenTriviaCard());
 
   const parentPin = useMemo(() => process.env.NEXT_PUBLIC_PARENT_PIN ?? "2468", []);
-  const teenTriviaCard = useMemo(() => pickTeenTriviaCard(), []);
   const level = Math.floor(progress.xp / XP_PER_LEVEL) + 1;
   const levelFloor = (level - 1) * XP_PER_LEVEL;
   const nextLevelTarget = level * XP_PER_LEVEL;
@@ -649,7 +648,7 @@ export function KidLearningApp() {
           <p style={{ margin: 0 }}>{refreshJoke.text}</p>
         </div>
         <div className="fun-box" style={{ marginTop: "0.55rem" }}>
-          <p style={{ margin: 0 }}>{teenTriviaCard.title}: {teenTriviaCard.text}</p>
+          <p style={{ margin: 0 }}>{refreshTrivia.title}: {refreshTrivia.text}</p>
         </div>
         <div className="xp-wrap">
           <div>
