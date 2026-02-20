@@ -211,6 +211,7 @@ export function KidLearningApp() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reviewPreparing, setReviewPreparing] = useState(false);
   const [kanaRound, setKanaRound] = useState<KanaRound | null>(null);
   const [kanaRoundIndex, setKanaRoundIndex] = useState(0);
   const [kanaScore, setKanaScore] = useState(0);
@@ -350,12 +351,57 @@ export function KidLearningApp() {
     setMessages([{ role: "assistant", content: MODE_STARTERS[nextMode] }]);
   }
 
-  function openMode(nextMode: Mode) {
-    const queue = pickReviewQueue(progress.words);
+  async function enrichMissingWordMetadata(base: ProgressState): Promise<ProgressState> {
+    const missingTerms = base.words
+      .filter((word) => !word.romaji || !word.english)
+      .map((word) => word.term)
+      .slice(0, 12);
+
+    if (missingTerms.length === 0) return base;
+
+    try {
+      const response = await fetch("/api/vocab", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ terms: missingTerms }),
+      });
+
+      if (!response.ok) return base;
+      const data = (await response.json()) as { vocab?: TutorVocabItem[] };
+      const vocab = Array.isArray(data.vocab) ? data.vocab : [];
+      if (vocab.length === 0) return base;
+
+      const lookup = new Map(vocab.map((item) => [item.term, item]));
+      const next = {
+        ...base,
+        words: base.words.map((word) => {
+          const found = lookup.get(word.term);
+          if (!found) return word;
+          return {
+            ...word,
+            romaji: word.romaji || found.romaji,
+            english: word.english || found.english,
+          };
+        }),
+      };
+      setProgress(next);
+      return next;
+    } catch (error) {
+      console.error("Failed to enrich word metadata", error);
+      return base;
+    }
+  }
+
+  async function openMode(nextMode: Mode) {
+    setReviewPreparing(true);
+    let working = withDailyReset(progress);
+    working = await enrichMissingWordMetadata(working);
+    const queue = pickReviewQueue(working.words);
     if (queue.length > 0) {
       setPendingMode(nextMode);
       setReviewQueue(queue);
       setReviewIndex(0);
+      setReviewPreparing(false);
       return;
     }
 
@@ -368,6 +414,7 @@ export function KidLearningApp() {
       };
     });
     beginMode(nextMode);
+    setReviewPreparing(false);
   }
 
   function finishReviewStep(correct: boolean) {
@@ -570,22 +617,23 @@ export function KidLearningApp() {
 
       {inHome ? (
         <section className="card" style={{ display: "grid", gap: "0.85rem", maxWidth: 760 }}>
-          <button type="button" onClick={() => openMode("fun-chat")} className="mode-button">
+          <button type="button" onClick={() => void openMode("fun-chat")} className="mode-button">
             <span>Start Fun Chat</span>
             <span>→</span>
           </button>
-          <button type="button" onClick={() => openMode("training-5")} className="mode-button">
+          <button type="button" onClick={() => void openMode("training-5")} className="mode-button">
             <span>Training (5 min)</span>
             <span>→</span>
           </button>
-          <button type="button" onClick={() => openMode("training-10")} className="mode-button">
+          <button type="button" onClick={() => void openMode("training-10")} className="mode-button">
             <span>Training (10 min)</span>
             <span>→</span>
           </button>
-          <button type="button" onClick={() => openMode("kana-match")} className="mode-button">
+          <button type="button" onClick={() => void openMode("kana-match")} className="mode-button">
             <span>Kana Match</span>
             <span>→</span>
           </button>
+          {reviewPreparing ? <p>Preparing quick review...</p> : null}
 
           <div className="card" style={{ margin: 0 }}>
             <h3 style={{ marginTop: 0 }}>Word Bank</h3>
