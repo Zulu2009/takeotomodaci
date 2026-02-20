@@ -163,6 +163,23 @@ function extractJapaneseTerms(text: string): string[] {
   return [...new Set(matches)].slice(0, 5);
 }
 
+function normalizeJapaneseTerm(term: string): string {
+  return term.replace(/[^\u3040-\u30ff\u4e00-\u9fafー]/g, "");
+}
+
+function findBestVocabMatch(term: string, vocab: TutorVocabItem[]): TutorVocabItem | undefined {
+  const normalizedTerm = normalizeJapaneseTerm(term);
+  if (!normalizedTerm) return undefined;
+
+  const direct = vocab.find((item) => normalizeJapaneseTerm(item.term) === normalizedTerm);
+  if (direct) return direct;
+
+  return vocab.find((item) => {
+    const normalizedItem = normalizeJapaneseTerm(item.term);
+    return normalizedItem.includes(normalizedTerm) || normalizedTerm.includes(normalizedItem);
+  });
+}
+
 function pickReviewQueue(words: WordEntry[]): WordEntry[] {
   if (words.length === 0) return [];
   const now = Date.now();
@@ -371,11 +388,10 @@ export function KidLearningApp() {
       const vocab = Array.isArray(data.vocab) ? data.vocab : [];
       if (vocab.length === 0) return base;
 
-      const lookup = new Map(vocab.map((item) => [item.term, item]));
       const next = {
         ...base,
         words: base.words.map((word) => {
-          const found = lookup.get(word.term);
+          const found = findBestVocabMatch(word.term, vocab);
           if (!found) return word;
           return {
             ...word,
@@ -526,7 +542,7 @@ export function KidLearningApp() {
         const wordsMap = new Map(next.words.map((word) => [word.term, word]));
 
         for (const term of terms) {
-          const match = vocabItems.find((item) => item.term === term);
+          const match = findBestVocabMatch(term, vocabItems);
           const existing = wordsMap.get(term);
           if (existing) {
             wordsMap.set(term, {
