@@ -59,6 +59,11 @@ type FunCard = {
   text: string;
 };
 
+type TeenTriviaCard = {
+  title: string;
+  text: string;
+};
+
 const MODE_LABELS: Record<Mode, string> = {
   "fun-chat": "Start Fun Chat",
   "training-5": "Training (5 min)",
@@ -101,6 +106,29 @@ const FUN_CARDS: FunCard[] = [
   { kind: "Trivia", text: "Hiragana is often used for grammar and native words, while katakana is used for many foreign loanwords." },
   { kind: "Fact", text: "You can often hear train departure melodies in Japan, and stations may have their own tune." },
   { kind: "Dad Joke", text: "I tried learning kanji too fast... now my brain needs subtitles." },
+];
+
+const TEEN_TRIVIA_CARDS: TeenTriviaCard[] = [
+  {
+    title: "History Spotlight",
+    text: "During the Meiji era (starting in 1868), Japan rapidly modernized its schools, military, and industry in just a few decades.",
+  },
+  {
+    title: "Culture Today",
+    text: "Japanese convenience stores are part of everyday life and often sell fresh meals, bill-pay services, and event tickets.",
+  },
+  {
+    title: "History Spotlight",
+    text: "The Heian period shaped much of classical Japanese literature, including The Tale of Genji by Murasaki Shikibu.",
+  },
+  {
+    title: "Culture Today",
+    text: "Many Japanese cities balance old and new: historic shrines can sit only minutes away from high-tech shopping districts.",
+  },
+  {
+    title: "History Spotlight",
+    text: "After World War II, Japan rebuilt quickly and became a major global economy by focusing on manufacturing and technology.",
+  },
 ];
 
 const EMPTY_PROGRESS: ProgressState = {
@@ -219,6 +247,18 @@ function pickDailyFunCard(): FunCard {
   return FUN_CARDS[index];
 }
 
+function pickRandomJokeCard(): FunCard {
+  const jokes = FUN_CARDS.filter((card) => card.kind === "Dad Joke");
+  return jokes[Math.floor(Math.random() * jokes.length)] ?? FUN_CARDS[0];
+}
+
+function pickTeenTriviaCard(): TeenTriviaCard {
+  const today = isoDateOnly(new Date());
+  const dayNumber = Number(today.replace(/-/g, ""));
+  const index = Math.abs(dayNumber) % TEEN_TRIVIA_CARDS.length;
+  return TEEN_TRIVIA_CARDS[index];
+}
+
 export function KidLearningApp() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -243,9 +283,11 @@ export function KidLearningApp() {
   const [showParentSettings, setShowParentSettings] = useState(false);
 
   const [toast, setToast] = useState<string | null>(null);
+  const [refreshJoke] = useState<FunCard>(() => pickRandomJokeCard());
 
   const parentPin = useMemo(() => process.env.NEXT_PUBLIC_PARENT_PIN ?? "2468", []);
   const dailyFunCard = useMemo(() => pickDailyFunCard(), []);
+  const teenTriviaCard = useMemo(() => pickTeenTriviaCard(), []);
   const level = Math.floor(progress.xp / XP_PER_LEVEL) + 1;
   const levelFloor = (level - 1) * XP_PER_LEVEL;
   const nextLevelTarget = level * XP_PER_LEVEL;
@@ -616,6 +658,14 @@ export function KidLearningApp() {
             Daily {dailyFunCard.kind}
           </p>
           <p style={{ margin: 0 }}>{dailyFunCard.text}</p>
+        </div>
+        <div className="fun-box" style={{ marginTop: "0.55rem" }}>
+          <p style={{ margin: "0 0 0.3rem", fontWeight: 800 }}>{refreshJoke.kind} (refresh for a new one)</p>
+          <p style={{ margin: 0 }}>{refreshJoke.text}</p>
+        </div>
+        <div className="fun-box" style={{ marginTop: "0.55rem" }}>
+          <p style={{ margin: "0 0 0.3rem", fontWeight: 800 }}>9th Grade JP: {teenTriviaCard.title}</p>
+          <p style={{ margin: 0 }}>{teenTriviaCard.text}</p>
         </div>
         <div className="xp-wrap">
           <div>
