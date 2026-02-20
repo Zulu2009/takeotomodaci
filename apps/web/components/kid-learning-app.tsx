@@ -25,6 +25,15 @@ const MODE_LABELS: Record<Mode, string> = {
   "training-10": "Training (10 min)",
 };
 
+const MODE_STARTERS: Record<Mode, string> = {
+  "fun-chat":
+    "Konnichiwa! I am Sensei Suki. Ask me anything in Japanese and I will teach you with kana + romaji + English.",
+  "training-5":
+    "Welcome to 5-minute training. I will give you fast practice rounds and a mini challenge each turn.",
+  "training-10":
+    "Welcome to 10-minute training. I will guide a deeper lesson and check your recall as we go.",
+};
+
 export function KidLearningApp() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -115,7 +124,7 @@ export function KidLearningApp() {
 
   function openMode(nextMode: Mode) {
     setMode(nextMode);
-    setMessages([]);
+    setMessages([{ role: "assistant", content: MODE_STARTERS[nextMode] }]);
   }
 
   function verifyPin() {
@@ -188,28 +197,31 @@ export function KidLearningApp() {
   return (
     <main>
       <header className="card" style={{ marginBottom: "1rem" }}>
-        <h1>Sensei Suki</h1>
-        <p>Welcome back.</p>
+        <h1 className="hero-title">Sensei Suki</h1>
+        <p>Japanese learning made playful and simple.</p>
       </header>
 
       {inHome ? (
         <section className="card" style={{ display: "grid", gap: "0.85rem", maxWidth: 700 }}>
-          <button type="button" onClick={() => openMode("fun-chat")} style={{ fontSize: "1.45rem", padding: "1.1rem" }}>
-            Start Fun Chat
+          <button type="button" onClick={() => openMode("fun-chat")} className="mode-button">
+            <span>Start Fun Chat</span>
+            <span>→</span>
           </button>
           <button
             type="button"
             onClick={() => openMode("training-5")}
-            style={{ fontSize: "1.45rem", padding: "1.1rem" }}
+            className="mode-button"
           >
-            Training (5 min)
+            <span>Training (5 min)</span>
+            <span>→</span>
           </button>
           <button
             type="button"
             onClick={() => openMode("training-10")}
-            style={{ fontSize: "1.45rem", padding: "1.1rem" }}
+            className="mode-button"
           >
-            Training (10 min)
+            <span>Training (10 min)</span>
+            <span>→</span>
           </button>
 
           <button
@@ -267,7 +279,7 @@ export function KidLearningApp() {
           <div style={{ display: "grid", gap: "0.5rem", margin: "1rem 0" }}>
             {messages.length === 0 ? <p>Ask your first question.</p> : null}
             {messages.map((msg, index) => (
-              <div key={`${msg.role}-${index}`} className="card" style={{ margin: 0 }}>
+              <div key={`${msg.role}-${index}`} className={`bubble ${msg.role === "user" ? "you" : ""}`}>
                 <strong>{msg.role === "assistant" ? "Sensei" : "You"}:</strong> {msg.content}
               </div>
             ))}
