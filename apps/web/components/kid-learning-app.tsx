@@ -240,13 +240,6 @@ function createKanaRound(): KanaRound {
   };
 }
 
-function pickDailyFunCard(): FunCard {
-  const today = isoDateOnly(new Date());
-  const dayNumber = Number(today.replace(/-/g, ""));
-  const index = Math.abs(dayNumber) % FUN_CARDS.length;
-  return FUN_CARDS[index];
-}
-
 function pickRandomJokeCard(): FunCard {
   const jokes = FUN_CARDS.filter((card) => card.kind === "Dad Joke");
   return jokes[Math.floor(Math.random() * jokes.length)] ?? FUN_CARDS[0];
@@ -286,7 +279,6 @@ export function KidLearningApp() {
   const [refreshJoke] = useState<FunCard>(() => pickRandomJokeCard());
 
   const parentPin = useMemo(() => process.env.NEXT_PUBLIC_PARENT_PIN ?? "2468", []);
-  const dailyFunCard = useMemo(() => pickDailyFunCard(), []);
   const teenTriviaCard = useMemo(() => pickTeenTriviaCard(), []);
   const level = Math.floor(progress.xp / XP_PER_LEVEL) + 1;
   const levelFloor = (level - 1) * XP_PER_LEVEL;
@@ -654,18 +646,10 @@ export function KidLearningApp() {
         <h1 className="hero-title">Sensei Suki</h1>
         <p>Talk about anything: friends, school, shopping, music, news, and more.</p>
         <div className="fun-box">
-          <p style={{ margin: "0 0 0.3rem", fontWeight: 800 }}>
-            Daily {dailyFunCard.kind}
-          </p>
-          <p style={{ margin: 0 }}>{dailyFunCard.text}</p>
-        </div>
-        <div className="fun-box" style={{ marginTop: "0.55rem" }}>
-          <p style={{ margin: "0 0 0.3rem", fontWeight: 800 }}>{refreshJoke.kind} (refresh for a new one)</p>
           <p style={{ margin: 0 }}>{refreshJoke.text}</p>
         </div>
         <div className="fun-box" style={{ marginTop: "0.55rem" }}>
-          <p style={{ margin: "0 0 0.3rem", fontWeight: 800 }}>9th Grade JP: {teenTriviaCard.title}</p>
-          <p style={{ margin: 0 }}>{teenTriviaCard.text}</p>
+          <p style={{ margin: 0 }}>{teenTriviaCard.title}: {teenTriviaCard.text}</p>
         </div>
         <div className="xp-wrap">
           <div>
