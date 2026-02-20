@@ -8,6 +8,7 @@ const MAX_PAGES = 60;
 export default function HiraganaBookPage() {
   const [page, setPage] = useState(1);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const pdfSrc = `/hiragana-book.pdf?page=${page}#page=${page}&view=FitH`;
 
   function prev() {
     setPage((p) => Math.max(1, p - 1));
@@ -39,6 +40,15 @@ export default function HiraganaBookPage() {
           <button type="button" className="secondary" onClick={prev} disabled={page <= 1}>Previous</button>
           <button type="button" onClick={next} disabled={page >= MAX_PAGES}>Next</button>
           <span>Page {page}</span>
+          <a
+            href={pdfSrc}
+            target="_blank"
+            rel="noreferrer"
+            className="secondary"
+            style={{ padding: "0.72rem 1.1rem", borderRadius: 12 }}
+          >
+            Open Full Screen
+          </a>
           <Link href="/" className="secondary" style={{ padding: "0.72rem 1.1rem", borderRadius: 12 }}>
             Back Home
           </Link>
@@ -47,9 +57,10 @@ export default function HiraganaBookPage() {
 
       <section className="card" style={{ padding: "0.5rem" }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <iframe
+          key={page}
           title="Tofugu Learn Hiragana Book"
-          src={`/hiragana-book.pdf#page=${page}&view=FitH`}
-          style={{ width: "100%", height: "76vh", border: 0, borderRadius: 12 }}
+          src={pdfSrc}
+          style={{ width: "100%", height: "76vh", border: 0, borderRadius: 12, background: "#fff" }}
         />
       </section>
     </main>
