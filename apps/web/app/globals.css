@@ -132,6 +132,14 @@ button.secondary {
   gap: 0.35rem;
 }
 
+.fun-box {
+  margin-top: 0.75rem;
+  border: 1px dashed #edb86f;
+  border-radius: 14px;
+  padding: 0.7rem 0.8rem;
+  background: linear-gradient(135deg, #fff5dc 0%, #ffe8c9 100%);
+}
+
 .xp-meter {
   height: 12px;
   border-radius: 999px;

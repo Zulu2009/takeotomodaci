@@ -46,6 +46,11 @@ type KanaRound = {
   answer: string;
 };
 
+type FunCard = {
+  kind: "Trivia" | "Fact" | "Dad Joke";
+  text: string;
+};
+
 const MODE_LABELS: Record<Mode, string> = {
   "fun-chat": "Start Fun Chat",
   "training-5": "Training (5 min)",
@@ -76,6 +81,18 @@ const KANA_ITEMS: KanaItem[] = [
   { kana: "こ", romaji: "ko" },
   { kana: "さ", romaji: "sa" },
   { kana: "し", romaji: "shi" },
+];
+
+const FUN_CARDS: FunCard[] = [
+  { kind: "Trivia", text: "In Japanese, there are multiple words for 'I' like watashi, boku, and ore depending on context." },
+  { kind: "Fact", text: "The Japanese school year usually starts in April, right when cherry blossoms begin to bloom." },
+  { kind: "Dad Joke", text: "What do you call a sleepy samurai? A nap-urai." },
+  { kind: "Trivia", text: "Arigato can feel casual, while arigato gozaimasu is more polite and formal." },
+  { kind: "Fact", text: "Many Japanese convenience stores are famous for fresh meals, not just snacks." },
+  { kind: "Dad Joke", text: "Why did the sushi blush? It saw the soy sauce undressing." },
+  { kind: "Trivia", text: "Hiragana is often used for grammar and native words, while katakana is used for many foreign loanwords." },
+  { kind: "Fact", text: "You can often hear train departure melodies in Japan, and stations may have their own tune." },
+  { kind: "Dad Joke", text: "I tried learning kanji too fast... now my brain needs subtitles." },
 ];
 
 const EMPTY_PROGRESS: ProgressState = {
@@ -168,6 +185,13 @@ function createKanaRound(): KanaRound {
   };
 }
 
+function pickDailyFunCard(): FunCard {
+  const today = isoDateOnly(new Date());
+  const dayNumber = Number(today.replace(/-/g, ""));
+  const index = Math.abs(dayNumber) % FUN_CARDS.length;
+  return FUN_CARDS[index];
+}
+
 export function KidLearningApp() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -193,6 +217,7 @@ export function KidLearningApp() {
   const [toast, setToast] = useState<string | null>(null);
 
   const parentPin = useMemo(() => process.env.NEXT_PUBLIC_PARENT_PIN ?? "2468", []);
+  const dailyFunCard = useMemo(() => pickDailyFunCard(), []);
   const level = Math.floor(progress.xp / XP_PER_LEVEL) + 1;
   const levelFloor = (level - 1) * XP_PER_LEVEL;
   const nextLevelTarget = level * XP_PER_LEVEL;
@@ -507,6 +532,12 @@ export function KidLearningApp() {
       <header className="card" style={{ marginBottom: "1rem" }}>
         <h1 className="hero-title">Sensei Suki</h1>
         <p>Talk about anything: friends, school, shopping, music, news, and more.</p>
+        <div className="fun-box">
+          <p style={{ margin: "0 0 0.3rem", fontWeight: 800 }}>
+            Daily {dailyFunCard.kind}
+          </p>
+          <p style={{ margin: 0 }}>{dailyFunCard.text}</p>
+        </div>
         <div className="xp-wrap">
           <div>
             <strong>Level {level}</strong>
